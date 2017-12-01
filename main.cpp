@@ -91,11 +91,11 @@ int put(int node, int iter, float val) {
 	return 0;
 }
 
-std::list<int> get_neighbors(int node) {
+std::list<int> get_neighbors(int node, char * neigh_file) {
 	std::list<int> neighbors;
 	std::string line;
 
-	std::ifstream neighbors_file ("neighbors.txt");
+	std::ifstream neighbors_file (neigh_file);
 	if (neighbors_file.is_open()) {
 		while ( getline(neighbors_file,line) ) {
 
@@ -137,8 +137,11 @@ int main(int argc, char ** argv) {
 	int iter = 0;
 	int iter_cap = atoi(argv[3]);
 
+	// get name of neighbors file
+	char * neigh_file = argv[4];
+
 	// get the list of neighbors of node from neighbors file
-	std::list<int> neighbors = get_neighbors(node);
+	std::list<int> neighbors = get_neighbors(node, neigh_file);
 	std::list<int>::iterator it;
 	float size = neighbors.size() + 1.0;
 
