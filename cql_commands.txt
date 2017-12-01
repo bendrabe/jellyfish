@@ -1,0 +1,8 @@
+CREATE KEYSPACE Neighbors WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 3};
+CREATE TABLE Neighbors.data ( node int, iteration int, value float, PRIMARY KEY (node, iteration) );
+
+drop keyspace Neighbors;
+
+INSERT INTO Neighbors.data ( node, iteration, value ) VALUES ( 0, 1, 1.5 );
+
+SELECT value FROM Neighbors.data WHERE node=0 AND iteration=1;
