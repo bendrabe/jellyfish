@@ -126,40 +126,104 @@ std::list<int> get_neighbors(int node, char * neigh_file) {
 	return neighbors;
 }
 
+int get_node_mult(char * neigh_file) {
+	int node_mult = 0;
+	std::string line;
+	std::ifstream neighbors_file (neigh_file);
+
+	while ( getline(neighbors_file,line) ) {
+		node_mult++;
+	}
+
+	return node_mult;
+}
+
+void print_usage() {
+	std::cout << "usage: jellyfish cmd [node] [val] [iter_cap] [neigh_file]" << std::endl;
+	std::cout << "\tcmd: (create,destroy,run)" << std::endl;
+	std::cout << "\t[node]: if cmd=run, node number" << std::endl;
+	std::cout << "\t[val]: if cmd=run, node initial value" << std::endl;
+	std::cout << "\t[iter_cap]: if cmd=run, max number of rounds" << std::endl;
+	std::cout << "\t[neigh_file]: if cmd=run, relative path to neighbors file" << std::endl;
+}
+
+/*
+ * cases:
+ * 	1 argument (create, destroy)
+ * 	5 arguments (run+node+val+iter_cap+neigh_file)
+ */
 int main(int argc, char ** argv) {
 
+	std::string cmd;
+	int node;
+	float val;
+	int iter_cap;
+	char * neigh_file;
+
+	cmd = std::string (argv[1]);
+	// if only one argument
+	if ( argc == 2 ) {
+		if ( cmd.compare("create") == 0 ){
+			create();
+			return 0;
+		}
+		else if ( cmd.compare("destroy") == 0 ) {
+			destroy();
+			return 0;
+		}
+		else {
+			print_usage();
+			return 1;
+		}
+	}
+
+	// if not 5 arguments
+	if ( argc != 6 ) {
+		print_usage();
+		return 1;
+	}
+	
 	// get node number and initial value
-	int node = atoi(argv[1]);
-	float val = strtof( argv[2], 0 );
+	node = atoi(argv[2]);
+	val = strtof( argv[3], 0 );
 	std::cout << "starting process for node: " << node << ", with initial value: " << val << "\n";
 
 	// initialize iteration counter and get max iterations
 	int iter = 0;
-	int iter_cap = atoi(argv[3]);
+	iter_cap = atoi(argv[4]);
 
 	// get name of neighbors file
-	char * neigh_file = argv[4];
+	neigh_file = argv[5];
 
 	// get the list of neighbors of node from neighbors file
 	std::list<int> neighbors = get_neighbors(node, neigh_file);
 	std::list<int>::iterator it;
-	float size = neighbors.size() + 1.0;
+	float size = neighbors.size();
+
+	// get the total number of nodes from neighbors file
+	float n = (float)get_node_mult(neigh_file);
+
+	// create weights; sum to 1, each neigh gets 1/n while host gets rest
+	float nhost_mult = 1.0/n;
+	float host_mult = 1.0 - size*nhost_mult;
 
 	// put initial value for node, increase iterator
 	put(node, iter, val); 
 	iter++;
 
 	while (iter < iter_cap) {
+		val *= host_mult;
 		for (it = neighbors.begin(); it != neighbors.end(); ++it) {
 			float reqd_val = get(*it, iter-1);
 			// NAN indicates value not yet in DB
 			while ( std::isnan(reqd_val) ){
 				reqd_val = get(*it, iter-1);
 			}
-			val += reqd_val;
+			val += reqd_val*nhost_mult;
 		}
-		val /= size;
-		std::cout << val << "\n";
+		// print every 5 iterations, including final if cap divisible by 5
+		if ( iter % 5 == 4 )
+			std::cout << "iter " << iter << ": " << val << std::endl;
 		put(node, iter, val);
 		iter++;
 	}
